@@ -1,41 +1,33 @@
+{-# LANGUAGE LambdaCase #-}
 module Main where
 
-import Vars(Var(..))
-import Parse(
-    toVars
-    , parseArgs
-    , ParseContext(EmptyContext, EnvNamespaceContext)
-    , matches, VarSpec(..))
-import System.IO
 import System.Environment
+import Parse(runParse)
+import Tree(tUpdate)
+import Commands(fParse, aParse, parseArgs, tApply, tFilter)
+import Serialize(serialize)
 
-getVars :: Handle -> ParseContext -> IO [(ParseContext, Var)]
-getVars h ctx = do
-    vars <- toVars h ctx
-    case vars of
-        (Left "EOF") -> return []
-        (Right (ctx2, v)) -> do
-            vars <- getVars h ctx2
-            return ((ctx2, v):vars)
+usage = "usage: figleaf [apply|set] arg1 [arg2...]"
+configF = "./fig_config" -- TODO: put this somewhere real, like ~/.config/figleaf/figleaf.cfg
 
-printIfMatchesSpec :: [(ParseContext, Var)] -> VarSpec -> IO ()
-printIfMatchesSpec [] spec = return ()
-printIfMatchesSpec (((EnvNamespaceContext e n), Var k v):vars) spec = do
-    if matches e n k spec then
-        putStrLn (show (Var k v))
-    else
-        return ()
-    printIfMatchesSpec vars spec
-
-doCommand argv = case argv of
-    ("enable":args) -> do
-        h <- openFile "./config" ReadMode
-        case parseArgs args of
-            Left e -> putStrLn e
-            Right specs -> do
-                vars <- getVars h EmptyContext
-                putStrLn (show vars)
-                printIfMatchesSpec (vars) specs
-    _ -> putStrLn "Usage:"
-
-main = getArgs >>= doCommand
+main = do
+    a:args <- getArgs
+    s <- readFile configF
+    -- Parse the config tree from the serialized file contents
+    -- TODO: make this work with an empty file
+    case runParse s of
+        Right t -> case a of
+            -- TODO: I feel like there is a more monad-y way to do this, or at least a way that involves
+            -- a smaller lambda (worst case, abstract this lambda out into its own function)
+            -- TODO: Right now if there are any overlapping variables in the tree they'll be printed
+            -- multiple times, which won't cause any problems but is unnecessary. Also, if you try to set any
+            -- variables that conflict with each other there should be an error.
+            "apply" -> mapM_ (\case
+                    Right t -> tApply t
+                    Left e -> putStrLn $ "error: " ++ e)  (map (tFilter t . fParse) args)
+            "set" -> case parseArgs args of
+                -- Apply the specified changes to the tree, serialize it to a string and save it to the config
+                Right args -> writeFile configF $ serialize $ foldr tUpdate t args
+                Left e -> putStrLn $ "error: " ++ e
+            _ -> putStrLn usage
+        Left e -> putStrLn e
