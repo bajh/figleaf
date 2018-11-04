@@ -6,5 +6,5 @@ import TestParseAndSerialize
 import TestCommands
 import TestUpdates
 
-allTests = hUnitTestToTests TestParseAndSerialize.tests ++ hUnitTestToTests TestCommands.tests ++ hUnitTestToTests TestUpdates.tests
+allTests = concat $ fmap hUnitTestToTests [TestParseAndSerialize.tests, TestCommands.tests, TestUpdates.tests]
 main = defaultMain allTests

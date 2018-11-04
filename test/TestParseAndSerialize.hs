@@ -8,8 +8,8 @@ import Serialize(serialize)
 import Tree(Tree(..))
 
 validCase ts s l = map (TestLabel l) [
-    TestCase(assertEqual ("parsing " ++ s) (Right $ Tree "default" ts) (runParse s))
-    , TestCase(assertEqual ("serializing " ++ s) s (serialize (Tree "default" ts))) ]
+    TestCase(assertEqual ("parsing " ++ s) (Right $ ts) (runParse s))
+    , TestCase(assertEqual ("serializing " ++ s) s (serialize [Tree "default" ts])) ]
 
 testLeaves = validCase
     [Leaf "NODE_ENV" "PRD", Leaf "PASSWORD" "123", Leaf "PORT" "6000" ]
@@ -35,9 +35,14 @@ testMix1 = validCase
     [Leaf "API_KEY" "whales", Tree "DEV" [Tree "readonly" [Leaf "DB_PASSWORD" "chickens", Leaf "USER" "chickenman"], Leaf "GOPATH" "$HOME"], Leaf "KAFKA_BROKERS" "broker1,broker2", Tree "PRD" [Leaf "DB_PASSWORD" "gnats"]]
     "API_KEY=whales\nDEV\n\treadonly\n\t\tDB_PASSWORD=chickens\n\t\tUSER=chickenman\n\tGOPATH=$HOME\nKAFKA_BROKERS=broker1,broker2\nPRD\n\tDB_PASSWORD=gnats"
 
+testMix2 = validCase
+    [Tree "prd" [Leaf "PASSWORD" "foo", Leaf "HOST" "127.0.0.1", Tree "gql" [Leaf "API_KEY" "hi"]], Tree "dev" [Leaf "PASSWORD" "foo2", Leaf "HOST" "localhost"], Leaf "HOST" "localhost", Leaf "PASSWORD" "bar"]
+    "prd\n\tPASSWORD=foo\n\tHOST=127.0.0.1\n\tgql\n\t\tAPI_KEY=hi\ndev\n\tPASSWORD=foo2\n\tHOST=localhost\nHOST=localhost\nPASSWORD=bar"
+
 tests = TestList $ concat [ testLeaves "top-level leaves"
     , testEmptyBranches "top-level branches"
     , testMixedLeavesEmptyBranches "mixed leaves and empty branches"
     , testNestedLeaves "leaves nested beneath one branch"
     , testNestedBranches "deeply nested branches"
-    , testMix1 "mix of branches and leaves" ]
+    , testMix1 "mix of branches and leaves"
+    , testMix2 "mix of branches and leaves 2" ]

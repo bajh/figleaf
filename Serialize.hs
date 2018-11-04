@@ -19,5 +19,5 @@ serializeN d (Tree k []) = replicateTs d ++ k
 serializeN d (Tree k ts) = replicateTs d ++ k ++ "\n" ++ serializeNs (d + 1) ts
 
 -- serialize converts a Tree into a string representation for disk storage or network transmission
-serialize :: Tree String String -> String
-serialize = serializeN 0
+serialize :: [Tree String String] -> String
+serialize = serializeNs 0

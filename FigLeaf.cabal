@@ -6,12 +6,18 @@ cabal-version: >= 1.10
 executable FigLeaf
     main-is: Main.hs
     build-depends:  base,
+                    directory,
+                    filepath,
                     containers,
                     split,
                     semigroups,
                     mtl,
                     Cabal
     default-language: Haskell2010
+    other-modules:  Commands,
+                    Parse,
+                    Serialize,
+                    Tree
 
 Test-Suite TestSuite
     type: exitcode-stdio-1.0
@@ -26,3 +32,10 @@ Test-Suite TestSuite
                     semigroups,
                     HUnit
     default-language: Haskell2010
+    other-modules: Commands,
+                   Parse,
+                   Serialize,
+                   TestCommands,
+                   TestParseAndSerialize,
+                   TestUpdates,
+                   Tree
